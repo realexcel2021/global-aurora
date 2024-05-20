@@ -16,13 +16,13 @@ data "aws_availability_zones" "secondary" {
 locals {
   name = "db-global-aurora"
 
-  primary_region   = "us-east-2"
+  primary_region   = "us-east-1"
   primary_vpc_cidr = "10.0.0.0/16"
   primary_azs      = slice(data.aws_availability_zones.primary.names, 0, 3)
 
   secondary_region   = "us-west-1"
   secondary_vpc_cidr = "10.1.0.0/16"
-  secondary_azs      = slice(data.aws_availability_zones.secondary.names, 0, 3)
+  secondary_azs      = slice(data.aws_availability_zones.secondary.names, 0, 2)
 
   tags = {
     Project    = local.name
@@ -50,7 +50,7 @@ module "aurora_primary" {
   engine_version            = aws_rds_global_cluster.this.engine_version
   master_username           = "root"
   global_cluster_identifier = aws_rds_global_cluster.this.id
-  instance_class            = "db.r6g.large"
+  instance_class            = "db.r5.large" # db.r6g.large
   instances                 = { for i in range(2) : i => {} }
   kms_key_id                = aws_kms_key.primary.arn
 
@@ -58,7 +58,7 @@ module "aurora_primary" {
   db_subnet_group_name = module.primary_vpc.database_subnet_group_name
   security_group_rules = {
     vpc_ingress = {
-      cidr_blocks = module.primary_vpc.private_subnets_cidr_blocks
+      cidr_blocks = [module.primary_vpc.vpc_cidr_block]
     }
   }
 
@@ -83,15 +83,16 @@ module "aurora_secondary" {
   engine_version            = aws_rds_global_cluster.this.engine_version
   global_cluster_identifier = aws_rds_global_cluster.this.id
   source_region             = local.primary_region
-  instance_class            = "db.r6g.large"
+  instance_class            = "db.r5.large"
   instances                 = { for i in range(2) : i => {} }
   kms_key_id                = aws_kms_key.secondary.arn
+  #enable_global_write_forwarding = true
 
   vpc_id               = module.secondary_vpc.vpc_id
   db_subnet_group_name = module.secondary_vpc.database_subnet_group_name
   security_group_rules = {
     vpc_ingress = {
-      cidr_blocks = module.secondary_vpc.private_subnets_cidr_blocks
+      cidr_blocks = [module.secondary_vpc.vpc_cidr_block]
     }
   }
 
