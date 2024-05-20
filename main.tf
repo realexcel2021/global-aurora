@@ -20,7 +20,7 @@ locals {
   primary_vpc_cidr = "10.0.0.0/16"
   primary_azs      = slice(data.aws_availability_zones.primary.names, 0, 3)
 
-  secondary_region   = "us-east-1"
+  secondary_region   = "us-west-1"
   secondary_vpc_cidr = "10.1.0.0/16"
   secondary_azs      = slice(data.aws_availability_zones.secondary.names, 0, 3)
 
